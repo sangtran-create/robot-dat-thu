@@ -28,12 +28,34 @@ public class Prefs {
     public String endMode() { return p.getString("endMode", "phrase"); } // phrase | pause
     public int autoSendSec() { return p.getInt("autoSendSec", 20); }
     public int idleTimeoutSec() { return p.getInt("idleTimeoutSec", 60); }
-    public float rate() { return p.getFloat("rate", 1.0f); }
-    public float pitch() { return p.getFloat("pitch", 1.0f); }
+    public float rate() { return p.getFloat("rate", 0.96f); }
+    public float pitch() { return p.getFloat("pitch", 0.86f); }
     public boolean vibrate() { return p.getBoolean("vibrate", true); }
     public boolean volumeKey() { return p.getBoolean("volumeKey", true); }
     public boolean autostart() { return p.getBoolean("autostart", true); }
     public int current() { return p.getInt("current", 0); }
+    public String voice() { return p.getString("voice", ""); }
+    public boolean screenAssist() { return p.getBoolean("screenAssist", true); }
+
+    public JSONArray contactsJson() {
+        try { return new JSONArray(p.getString("contacts", "[]")); } catch (JSONException e) { return new JSONArray(); }
+    }
+
+    public List<Actions.Contact> contacts() {
+        List<Actions.Contact> out = new ArrayList<>();
+        JSONArray a = contactsJson();
+        for (int i = 0; i < a.length(); i++) {
+            JSONObject o = a.optJSONObject(i);
+            if (o == null) continue;
+            Actions.Contact c = new Actions.Contact();
+            c.name = o.optString("name", "");
+            c.zalo = o.optString("zalo", "");
+            c.messenger = o.optString("messenger", "");
+            c.email = o.optString("email", "");
+            if (!c.name.trim().isEmpty()) out.add(c);
+        }
+        return out;
+    }
 
     public List<String> endPhrases() {
         String raw = p.getString("endPhrases", "xong rồi, vậy đó em, vậy đó, em nghĩ sao, em thấy sao, hết ý, thế nhé");
@@ -80,6 +102,9 @@ public class Prefs {
             o.put("vibrate", vibrate());
             o.put("volumeKey", volumeKey());
             o.put("autostart", autostart());
+            o.put("voice", voice());
+            o.put("screenAssist", screenAssist());
+            o.put("contacts", contactsJson());
         } catch (JSONException ignored) { }
         return o;
     }
@@ -101,6 +126,9 @@ public class Prefs {
         if (o.has("vibrate")) e.putBoolean("vibrate", o.optBoolean("vibrate", true));
         if (o.has("volumeKey")) e.putBoolean("volumeKey", o.optBoolean("volumeKey", true));
         if (o.has("autostart")) e.putBoolean("autostart", o.optBoolean("autostart", true));
+        if (o.has("voice")) e.putString("voice", o.optString("voice", ""));
+        if (o.has("screenAssist")) e.putBoolean("screenAssist", o.optBoolean("screenAssist", true));
+        if (o.has("contacts") && o.optJSONArray("contacts") != null) e.putString("contacts", o.optJSONArray("contacts").toString());
         e.apply();
     }
 

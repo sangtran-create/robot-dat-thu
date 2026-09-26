@@ -6,6 +6,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.util.List;
+import org.json.JSONArray;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -38,18 +41,75 @@ public class DifyClient {
     }
 
     public static Call stream(String base, String key, String query, String convId, String user,
-                              Listener l, Handler main) {
+                              List<byte[]> images, Listener l, Handler main) {
         Call c = new Call();
-        new Thread(() -> run(c, base, key, query, convId, user, l, main, true), "dify").start();
+        new Thread(() -> {
+            JSONArray files = new JSONArray();
+            if (images != null) {
+                for (byte[] img : images) {
+                    if (c.cancelled) return;
+                    try {
+                        String id = upload(base, key, user, img);
+                        JSONObject f = new JSONObject();
+                        f.put("type", "image");
+                        f.put("transfer_method", "local_file");
+                        f.put("upload_file_id", id);
+                        files.put(f);
+                    } catch (Exception e) {
+                        String m = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+                        if (!c.cancelled) main.post(() -> l.onError("Không gửi được ảnh lên Dify: " + m));
+                        return;
+                    }
+                }
+            }
+            run(c, base, key, query, convId, user, files, l, main, true);
+        }, "dify").start();
         return c;
     }
 
+    /** Tải một ảnh JPEG lên Dify, trả về id của file. */
+    private static String upload(String base, String key, String user, byte[] jpeg) throws Exception {
+        String b = trimBase(base);
+        String boundary = "----robot" + System.currentTimeMillis();
+        HttpURLConnection conn = (HttpURLConnection) new URL(b + "/files/upload").openConnection();
+        conn.setRequestMethod("POST");
+        conn.setDoOutput(true);
+        conn.setConnectTimeout(15000);
+        conn.setReadTimeout(60000);
+        conn.setRequestProperty("Authorization", "Bearer " + key.trim());
+        conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+        ByteArrayOutputStream bo = new ByteArrayOutputStream();
+        String head = "--" + boundary + "\r\n"
+                + "Content-Disposition: form-data; name=\"user\"\r\n\r\n" + user + "\r\n"
+                + "--" + boundary + "\r\n"
+                + "Content-Disposition: form-data; name=\"file\"; filename=\"robot.jpg\"\r\n"
+                + "Content-Type: image/jpeg\r\n\r\n";
+        bo.write(head.getBytes(StandardCharsets.UTF_8));
+        bo.write(jpeg);
+        bo.write(("\r\n--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
+        try (OutputStream os = conn.getOutputStream()) { bo.writeTo(os); }
+        int code = conn.getResponseCode();
+        if (code != 200 && code != 201) {
+            String raw = readAll(conn.getErrorStream());
+            conn.disconnect();
+            throw new Exception(errorText(code, raw));
+        }
+        String raw = readAll(conn.getInputStream());
+        conn.disconnect();
+        return new JSONObject(raw).getString("id");
+    }
+
+    private static String trimBase(String base) {
+        String b = base.trim();
+        while (b.endsWith("/")) b = b.substring(0, b.length() - 1);
+        return b;
+    }
+
     private static void run(Call c, String base, String key, String query, String convId, String user,
-                            Listener l, Handler main, boolean allowRetry) {
+                            JSONArray files, Listener l, Handler main, boolean allowRetry) {
         HttpURLConnection conn = null;
         try {
-            String b = base.trim();
-            while (b.endsWith("/")) b = b.substring(0, b.length() - 1);
+            String b = trimBase(base);
             conn = (HttpURLConnection) new URL(b + "/chat-messages").openConnection();
             c.conn = conn;
             conn.setRequestMethod("POST");
@@ -66,6 +126,7 @@ public class DifyClient {
             body.put("response_mode", "streaming");
             body.put("user", user);
             if (convId != null && !convId.isEmpty()) body.put("conversation_id", convId);
+            if (files != null && files.length() > 0) body.put("files", files);
             try (OutputStream os = conn.getOutputStream()) {
                 os.write(body.toString().getBytes(StandardCharsets.UTF_8));
             }
@@ -75,10 +136,12 @@ public class DifyClient {
                 String raw = readAll(conn.getErrorStream());
                 if (code == 404 && allowRetry && convId != null && !convId.isEmpty()) {
                     // Cuộc trò chuyện cũ không còn: bắt đầu cuộc mới
-                    run(c, base, key, query, null, user, l, main, false);
+                    run(c, base, key, query, null, user, files, l, main, false);
                     return;
                 }
-                String msg = errorText(code, raw);
+                String msg = (files != null && files.length() > 0 && code == 400)
+                        ? errorText(code, raw) + ". Nếu là lỗi ảnh: bật Thị giác (Vision) cho robot trong Dify rồi Xuất bản lại."
+                        : errorText(code, raw);
                 if (!c.cancelled) main.post(() -> l.onError(msg));
                 return;
             }

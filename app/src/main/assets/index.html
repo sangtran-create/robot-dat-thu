@@ -22,27 +22,38 @@ button{border:none;background:none;cursor:pointer}
 svg.ic{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
 .stage{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px}
-.screen{position:relative;flex:1 1 55%;min-height:180px;background:var(--screen);border-radius:26px;overflow:hidden;
-  box-shadow:0 0 0 3px var(--edge),0 0 40px -10px var(--glow) inset}
-.screen svg{position:absolute;inset:0;width:100%;height:100%;filter:drop-shadow(0 0 6px var(--glow))}
-.face *{fill:var(--oled);stroke:var(--oled)}
-.face .line{fill:none;stroke-width:6;stroke-linecap:round;stroke-linejoin:round}
-.face .solid{stroke:none}
-#head{transform-box:view-box;transform-origin:50% 50%;transition:transform .35s ease}
-#eyes{transform-box:fill-box;transform-origin:center;animation:blink 5s infinite}
-@keyframes blink{0%,93%,100%{transform:scaleY(1)}95%{transform:scaleY(.08)}}
-.talk{transform-box:fill-box;transform-origin:center;animation:talk .2s ease-in-out infinite alternate}
-@keyframes talk{from{transform:scaleY(.35)}to{transform:scaleY(1.15)}}
-.look-left #head{transform:translateX(-9%)} .look-right #head{transform:translateX(9%)}
-.look-up #head{transform:translateY(-9%)} .look-down #head{transform:translateY(9%)}
-.nod #head{animation:nod .5s ease-in-out 2}
-@keyframes nod{50%{transform:translateY(7%)}}
-.shake #head{animation:shake .4s ease-in-out 2}
-@keyframes shake{25%{transform:translateX(-6%)}75%{transform:translateX(6%)}}
-.dance #head{animation:dance .6s ease-in-out 3}
-@keyframes dance{25%{transform:rotate(-8deg) translateY(-4%)}75%{transform:rotate(8deg) translateY(-4%)}}
-.wink #eyes{animation:none;transform:scaleY(.1)}
-.status{position:absolute;top:12px;left:16px;display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--oled);text-shadow:0 0 6px var(--glow)}
+.screen{position:relative;flex:1 1 58%;min-height:200px;border-radius:26px;overflow:hidden;
+  background:radial-gradient(ellipse at 50% 40%,#1D3A45 0%,#12242C 55%,#0B161B 100%);
+  box-shadow:0 0 0 3px var(--edge)}
+.screen svg.char{position:absolute;inset:0;width:100%;height:100%}
+#bot{transform-box:view-box;transform-origin:120px 200px;animation:float 3.6s ease-in-out infinite}
+@keyframes float{50%{translate:0 -4px}}
+#headG{transform-box:view-box;transform-origin:120px 175px;transition:transform .35s ease}
+#eyesG{transform-box:view-box;transition:transform .22s ease}
+.eyeLid{transform-box:fill-box;transform-origin:50% 50%;transition:transform .08s ease-out}
+#mouth{transition:d .15s ease}
+#armL{transform-box:view-box;transform-origin:62px 206px;transition:transform .4s ease}
+#armR{transform-box:view-box;transform-origin:178px 206px;transition:transform .4s ease}
+#bulb{transition:fill .3s}
+.fx{opacity:0;transition:opacity .3s}
+.fx.on{opacity:1}
+#blush{opacity:0;transition:opacity .35s}
+.glow{filter:drop-shadow(0 0 4px #7FF3E1)}
+.listening #bulb{fill:#FF6B6B} .thinking #bulb{fill:#FFC857} .speaking #bulb{fill:#7FF3E1} .camera #bulb{fill:#8AB4FF}
+.listening #bulbGlow{animation:pulse 1.1s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.25}}
+.wave #armR{animation:wave .5s ease-in-out 3}
+@keyframes wave{0%,100%{transform:rotate(-120deg)}50%{transform:rotate(-150deg)}}
+.nod #headG{animation:nod .45s ease-in-out 2}
+@keyframes nod{50%{transform:translateY(7px)}}
+.shake #headG{animation:shake .38s ease-in-out 2}
+@keyframes shake{25%{transform:rotate(-7deg)}75%{transform:rotate(7deg)}}
+.dance #bot{animation:dance .55s ease-in-out 3}
+.dance #armL{transform:rotate(60deg)} .dance #armR{transform:rotate(-60deg)}
+@keyframes dance{25%{transform:rotate(-6deg) translateY(-6px)}75%{transform:rotate(6deg) translateY(-6px)}}
+.thinkarm #armR{transform:rotate(-95deg)}
+@media (prefers-reduced-motion: reduce){#bot,#headG,#armR,#armL{animation:none!important}}
+.status{position:absolute;top:12px;left:16px;z-index:2;display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--oled);background:rgba(4,9,11,.45);padding:5px 10px;border-radius:999px}
 .dot{width:9px;height:9px;border-radius:50%;background:var(--oled);opacity:.4}
 .listening .dot{background:var(--led);opacity:1;box-shadow:0 0 10px var(--led)}
 .thinking .dot{background:var(--warn);opacity:1}
@@ -56,16 +67,20 @@ svg.ic{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;strok
 .note.info{color:var(--muted);border-color:var(--accent)}
 .note:empty{display:none}
 
-.typebar{display:none;gap:8px}
-.typebar.on{display:flex}
+.typewrap{display:none;flex-direction:column;gap:8px}
+.typewrap.on{display:flex}
+.typebar{display:flex;gap:8px}
+.delegate{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.delegate button{padding:7px 12px;border-radius:999px;border:1px solid var(--edge);background:var(--panel);font-size:13px;font-weight:600;color:var(--text)}
 .typebar input{flex:1;min-width:0;padding:12px 14px;border-radius:14px;border:1px solid var(--edge);background:var(--panel)}
 .typebar button{padding:0 16px;border-radius:14px;background:var(--accent);color:#06201C;font-weight:600}
 
-.controls{display:flex;align-items:center;justify-content:center;gap:26px}
-.round{width:56px;height:56px;border-radius:50%;background:var(--panel);border:1px solid var(--edge);display:grid;place-items:center;color:var(--muted)}
-.mic{width:86px;height:86px;border-radius:50%;background:var(--oled);color:var(--screen);display:grid;place-items:center;box-shadow:0 0 24px -6px var(--glow)}
+.controls{display:flex;align-items:center;justify-content:center;gap:12px}
+.round{width:52px;height:52px;flex:none;border-radius:50%;background:var(--panel);border:1px solid var(--edge);display:grid;place-items:center;color:var(--muted)}
+.mic{width:80px;height:80px;flex:none;border-radius:50%;background:var(--oled);color:var(--screen);display:grid;place-items:center;box-shadow:0 0 24px -6px var(--glow)}
 .listening .mic{background:var(--led);color:#fff}
 .speaking .mic,.thinking .mic{background:var(--accent)}
+.camera .dot{background:#7FB2FF;opacity:1}
 .mic svg.ic{width:34px;height:34px}
 .hint{text-align:center;font-size:12px;color:var(--muted)}
 
@@ -91,7 +106,6 @@ svg.ic{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;strok
 input[type=range]{width:100%}
 input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent)}
 .ver{color:var(--muted);font-size:12px;text-align:center;margin-top:10px}
-@media (prefers-reduced-motion: reduce){#eyes,.talk,#head{animation:none!important}}
 </style>
 </head>
 <body>
@@ -106,7 +120,41 @@ input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent)}
   <div class="stage">
     <div class="screen" id="screen">
       <div class="status"><span class="dot"></span><span id="statusText">Chạm để nói</span></div>
-      <svg class="face" viewBox="0 0 240 160" aria-hidden="true"><g id="head"><g id="eyes"></g><g id="mouth"></g></g></svg>
+      <svg class="char" viewBox="0 -12 240 264" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+        <defs>
+          <linearGradient id="shell" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#DCE4EA"/></linearGradient>
+          <linearGradient id="shellB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F3F6F8"/><stop offset="1" stop-color="#C9D3DA"/></linearGradient>
+        </defs>
+        <g id="bot">
+          <ellipse cx="120" cy="244" rx="54" ry="5" fill="#000" opacity=".25"/>
+          <g id="armL"><rect x="44" y="200" width="22" height="40" rx="11" fill="url(#shellB)"/></g>
+          <g id="armR"><rect x="174" y="200" width="22" height="40" rx="11" fill="url(#shellB)"/></g>
+          <rect x="66" y="186" width="108" height="58" rx="28" fill="url(#shellB)"/>
+          <circle cx="120" cy="214" r="9" fill="#12242C"/>
+          <circle id="chest" cx="120" cy="214" r="5" fill="#7FF3E1" class="glow"/>
+          <g id="headG">
+            <line x1="120" y1="40" x2="120" y2="22" stroke="#C9D3DA" stroke-width="5" stroke-linecap="round"/>
+            <circle id="bulbGlow" cx="120" cy="18" r="11" fill="#7FF3E1" opacity=".35"/>
+            <circle id="bulb" cx="120" cy="18" r="7" fill="#7FF3E1"/>
+            <rect x="30" y="92" width="18" height="44" rx="9" fill="#4FD1BD"/>
+            <rect x="192" y="92" width="18" height="44" rx="9" fill="#4FD1BD"/>
+            <rect x="38" y="38" width="164" height="152" rx="54" fill="url(#shell)"/>
+            <rect x="54" y="60" width="132" height="110" rx="38" fill="#0E1B22"/>
+            <g id="blush"><ellipse cx="74" cy="138" rx="10" ry="6" fill="#FF8FA3" opacity=".7"/><ellipse cx="166" cy="138" rx="10" ry="6" fill="#FF8FA3" opacity=".7"/></g>
+            <g id="eyesG" class="glow">
+              <g class="eyeLid" id="eyeL"><path id="eyeLp" fill="#7FF3E1" d=""/></g>
+              <g class="eyeLid" id="eyeR"><path id="eyeRp" fill="#7FF3E1" d=""/></g>
+            </g>
+            <path id="mouth" class="glow" d="M108 146 Q120 154 132 146" stroke="#7FF3E1" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+            <path id="fxSweat" class="fx" d="M178 64 Q184 74 178 78 Q172 74 178 64 Z" fill="#A6DCF2"/>
+            <ellipse id="fxTear" class="fx" cx="86" cy="130" rx="3" ry="5" fill="#A6DCF2"/>
+            <path id="fxAnger" class="fx" d="M166 46 l7 7 m0 -7 l-7 7 M178 52 l6 6 m0 -6 l-6 6" stroke="#FF6B6B" stroke-width="3" stroke-linecap="round"/>
+            <text id="fxBang" class="fx" x="192" y="60" font-size="26" font-weight="800" fill="#FFD166">!</text>
+            <text id="fxHmm" class="fx" x="36" y="58" font-size="22" font-weight="800" fill="#BFE9DF">?</text>
+            <text id="fxHeart" class="fx" x="186" y="56" font-size="20" fill="#FF8FA3">♥</text>
+          </g>
+        </g>
+      </svg>
     </div>
     <div class="talkbox" id="talkbox">
       <div class="heard" id="heard"></div>
@@ -115,23 +163,44 @@ input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent)}
     </div>
   </div>
 
-  <div class="typebar" id="typebar">
-    <input id="textIn" placeholder="Gõ để thử robot" autocomplete="off">
-    <button id="sendBtn">Gửi</button>
+  <div class="typewrap" id="typewrap">
+    <div class="typebar on" id="typebar">
+      <input id="textIn" placeholder="Nhắn robot, hoặc gõ việc để giao cho AI" autocomplete="off">
+      <button id="sendBtn">Gửi</button>
+    </div>
+    <div class="delegate">
+      <span>AI:</span>
+      <button data-app="claude">Claude</button>
+      <button data-app="chatgpt">ChatGPT</button>
+      <button data-app="gemini">Gemini</button>
+    </div>
+    <div class="delegate">
+      <span>Gửi:</span>
+      <button data-share="zalo">Zalo</button>
+      <button data-share="messenger">Messenger</button>
+      <button data-share="gmail">Gmail</button>
+      <button data-share="keep">Keep</button>
+    </div>
   </div>
 
   <div class="controls">
     <button class="round" id="kbBtn" aria-label="Gõ chữ">
       <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h.01M11 10h.01M15 10h.01M7 14h10"/></svg>
     </button>
+    <button class="round" id="photoBtn" aria-label="Chụp ảnh cho robot xem">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+    </button>
     <button class="mic" id="micBtn" aria-label="Nói">
       <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>
+    </button>
+    <button class="round" id="videoBtn" aria-label="Quay video cho robot xem">
+      <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z"/></svg>
     </button>
     <button class="round" id="stopBtn" aria-label="Cho robot nghỉ">
       <svg class="ic" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2"/></svg>
     </button>
   </div>
-  <div class="hint" id="hint">Nói xong thì kết bằng "xong rồi" hoặc "vậy đó em". Chạm nút giữa để ngắt lời hoặc gửi ngay.</div>
+  <div class="hint" id="hint">"xong rồi" để kết câu · "nhắn Zalo cho…" · "tạo lịch…" · "giao cho Claude…" · "em nhìn cái này"</div>
 </div>
 
 <!-- Settings -->
@@ -167,10 +236,62 @@ input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent)}
   <div class="group">
     <h2>Giọng đọc &amp; cử chỉ</h2>
     <div class="card">
+      <div class="field"><label for="voice">Giọng đọc</label>
+        <select id="voice"><option value="">Mặc định của máy</option></select>
+        <small>Giọng "cần mạng" thường tự nhiên hơn. Thiếu giọng: bấm "Cài giọng đọc tiếng Việt" bên dưới.</small></div>
+      <button class="btn" id="maleBtn">Giọng nam ấm (tự chọn giọng nam, trầm hơn)</button>
+      <button class="btn" id="previewBtn">▶ Nghe thử giọng đang chọn</button>
       <div class="field"><label for="rate">Tốc độ đọc <span id="rateVal"></span></label><input type="range" id="rate" min="0.6" max="1.6" step="0.05"></div>
       <div class="field"><label for="pitch">Độ trầm bổng <span id="pitchVal"></span></label><input type="range" id="pitch" min="0.6" max="1.4" step="0.05"></div>
       <div class="row"><label for="vibrate">Rung khi gật / lắc đầu</label><input type="checkbox" id="vibrate"></div>
       <button class="btn" id="ttsBtn">Cài giọng đọc tiếng Việt…</button>
+    </div>
+  </div>
+
+  <div class="group">
+    <h2>Danh bạ của robot</h2>
+    <div class="card">
+      <div id="contactList"></div>
+      <button class="btn" id="addContact">+ Thêm người</button>
+      <div class="field"><small>Tên đúng như anh hay gọi (vd "anh Tuấn", "chị Lan"). Có số Zalo / tên tài khoản Messenger (phần sau facebook.com/) thì robot mở thẳng khung chat; có email thì điền sẵn người nhận Gmail.</small></div>
+    </div>
+  </div>
+
+  <div class="group">
+    <h2>Lệnh điều khiển app</h2>
+    <div class="card">
+      <div class="field"><small>
+        • "Nhắn Zalo cho anh Tuấn: chiều nay họp dời sang 4 giờ" → robot đọc lại → nói "gửi" / "sửa lại thành…" / "hủy"<br>
+        • "Nhắn Messenger cho chị Lan là em gửi báo giá rồi"<br>
+        • "Gửi email cho chị Lan tiêu đề báo cáo tuần nội dung…"<br>
+        • "Tạo lịch họp giao ban 9 giờ sáng thứ hai" · "Đặt lịch gặp đối tác 3 giờ chiều mai"<br>
+        • "Ghi chú mua quà sinh nhật cho mẹ" (Google Keep)<br>
+        • "Mở Google Sheets / Docs / Slides / Drive / Meet / Lịch / Gmail / Tasks" · "Tạo cuộc họp Meet"<br>
+        Robot luôn để anh bấm Gửi / Lưu cuối cùng, không tự gửi thay anh.
+      </small></div>
+    </div>
+  </div>
+
+  <div class="group">
+    <h2>Giao việc cho app AI trả phí</h2>
+    <div class="card">
+      <div class="field"><small>Nói "giao cho Claude soạn báo cáo tuần…", "hỏi ChatGPT…", "nhờ Gemini…" (hoặc gõ rồi bấm nút Giao cho). Robot mở app Claude / ChatGPT / Gemini trên máy với nội dung đã điền sẵn, dùng đúng tài khoản trả phí của anh (Projects, tạo file, tìm kiếm…). Nội dung cũng được copy sẵn, nếu app không tự điền thì nhấn giữ ô nhập → Dán.</small></div>
+    </div>
+  </div>
+
+  <div class="group">
+    <h2>Xem màn hình khi gọi robot</h2>
+    <div class="card">
+      <div class="row"><label for="screenAssist">Cho robot xem màn hình lúc giữ nút nguồn</label><input type="checkbox" id="screenAssist"></div>
+      <div class="field"><small>Đang ở Zalo, Gmail, Sheets… giữ nút nguồn gọi robot, rồi nói "gợi ý trả lời", "tóm tắt giúp", "cái này là gì". Robot chỉ xem đúng màn hình lúc anh gọi, không theo dõi liên tục, tự xóa sau 3 phút. App ngân hàng thường tự chặn chụp màn hình. Cần bật thêm: Cài đặt máy › Ứng dụng › Ứng dụng mặc định › Ứng dụng trợ lý kỹ thuật số › bánh răng › bật "Sử dụng văn bản trên màn hình" và "Sử dụng ảnh chụp màn hình".</small></div>
+      <button class="btn" id="assistBtn2">Mở cài đặt Trợ lý…</button>
+    </div>
+  </div>
+
+  <div class="group">
+    <h2>Camera</h2>
+    <div class="card">
+      <div class="field"><small>Nói "em nhìn cái này", "chụp ảnh" hoặc bấm nút máy ảnh: robot mở camera của Pixel, ảnh lưu vào Thư viện › RobotDatThu rồi robot nhận xét. Nói "quay video" hoặc bấm nút quay: video lưu vào thư viện, robot xem 3 khung hình để nhận xét. Cần bật <b>Thị giác</b> cho robot trong Dify rồi Xuất bản lại.</small></div>
     </div>
   </div>
 
@@ -202,84 +323,117 @@ input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent)}
   const R = window.Robot || null;   // cầu nối Android
   const app = $("app");
 
-  /* ---------- Face ---------- */
-  const EL=[88,64], ER=[152,64], M=[120,112];
-  const eye={
-    neutral:'<rect class="solid" x="-13" y="-18" width="26" height="36" rx="12"/>',
-    happy:'<path class="line" d="M-15 6 Q0 -14 15 6"/>',
-    laugh:'<path class="line" d="M-15 4 L0 -8 L15 4"/>',
-    thinking:'<rect class="solid" x="-12" y="-12" width="24" height="22" rx="9"/>',
-    surprised:'<circle class="line" r="15"/><circle class="solid" r="5"/>',
-    confused:'<rect class="solid" x="-12" y="-14" width="24" height="28" rx="10"/>',
-    sad:'<path class="solid" d="M-13 -5 L13 -13 L13 13 Q13 17 9 17 L-9 17 Q-13 17 -13 13 Z"/>',
-    angry:'<path class="solid" d="M-13 -13 L13 -4 L13 13 Q13 17 9 17 L-9 17 Q-13 17 -13 13 Z"/>',
-    listening:'<rect class="solid" x="-14" y="-20" width="28" height="40" rx="13"/>'
-  };
-  const mouth={
-    neutral:'<path class="line" d="M-13 0 Q0 7 13 0"/>',
-    happy:'<path class="solid" d="M-20 -4 Q0 20 20 -4 Z"/>',
-    laugh:'<path class="solid" d="M-24 -6 Q0 26 24 -6 Z"/>',
-    thinking:'<path class="line" d="M-8 2 L10 -2"/>',
-    surprised:'<ellipse class="line" rx="8" ry="10" stroke-width="5"/>',
-    confused:'<path class="line" d="M-12 2 Q-6 -3 0 2 T12 2"/>',
-    sad:'<path class="line" d="M-14 7 Q0 -6 14 7"/>',
-    angry:'<path class="line" d="M-14 4 L14 4"/>',
-    listening:'<path class="line" d="M-8 0 Q0 4 8 0"/>',
-    talk:'<ellipse class="solid talk" rx="13" ry="8"/>'
-  };
-  let state="idle", emotion="happy";
-  function draw(){
-    const e = state==="listening" ? "listening" : state==="thinking" ? "thinking" : emotion;
-    const l = eye[e]||eye.neutral;
-    const rt = (e==="sad") ? `translate(${ER[0]} ${ER[1]}) scale(-1 1)` : (e==="angry") ? `translate(${ER[0]} ${ER[1]}) scale(-1 1)` : `translate(${ER[0]} ${ER[1]})`;
-    let right = l; if (e==="confused") right = eye.thinking;
-    $("eyes").innerHTML = `<g transform="translate(${EL[0]} ${EL[1]})">${l}</g><g transform="${rt}">${right}</g>`;
-    const m = state==="speaking" ? "talk" : (mouth[e]?e:"neutral");
-    $("mouth").innerHTML = `<g transform="translate(${M[0]} ${M[1]})">${mouth[m]}</g>`;
-  }
+  /* ---------- Face (robot dễ thương) ---------- */
   const scr = $("screen");
-  let gestureTimer=null, lookTimer=null;
+  const EYE = { // hình mắt vẽ quanh tâm (0,0), rồi dịch tới 2 vị trí mắt
+    open:  "M -11 -16 Q -11 -20 -7 -20 L 7 -20 Q 11 -20 11 -16 L 11 16 Q 11 20 7 20 L -7 20 Q -11 20 -11 16 Z",
+    happy: "M -14 6 Q 0 -16 14 6 L 10 9 Q 0 -6 -10 9 Z",
+    laugh: "M -14 -8 L 10 0 L -14 8 L -10 0 Z",
+    laughR:"M 14 -8 L -10 0 L 14 8 L 10 0 Z",
+    sad:   "M -12 -6 L 12 -12 L 12 12 Q 12 16 8 16 L -8 16 Q -12 16 -12 12 Z",
+    angry: "M -12 -12 L 12 -4 L 12 12 Q 12 16 8 16 L -8 16 Q -12 16 -12 12 Z",
+    wide:  "M 0 -19 C 11 -19 19 -11 19 0 C 19 11 11 19 0 19 C -11 19 -19 11 -19 0 C -19 -11 -11 -19 0 -19 Z",
+    small: "M -8 -10 Q -8 -13 -5 -13 L 5 -13 Q 8 -13 8 -10 L 8 10 Q 8 13 5 13 L -5 13 Q -8 13 -8 10 Z",
+    half:  "M -12 -2 L 12 -2 L 12 10 Q 12 14 8 14 L -8 14 Q -12 14 -12 10 Z",
+    heart: "M 0 14 C -26 -2 -14 -22 0 -8 C 14 -22 26 -2 0 14 Z"
+  };
+  function eye(shape, cx, cy){
+    return EYE[shape].replace(/(-?\d+\.?\d*) (-?\d+\.?\d*)/g, (m,x,y) => `${(+x+cx).toFixed(1)} ${(+y+cy).toFixed(1)}`);
+  }
+  const E = { // mắt trái/phải · miệng [độ cong, độ mở] · má · hiệu ứng · tay
+    neutral:  {l:"open",  r:"open",  m:[4,0]},
+    happy:    {l:"happy", r:"happy", m:[8,0],  blush:1, arm:"wave"},
+    laugh:    {l:"laugh", r:"laughR",m:[10,10],blush:1},
+    thinking: {l:"half",  r:"open",  m:[0,0],  fx:"fxHmm", look:[-.7,-.8], arm:"think"},
+    surprised:{l:"wide",  r:"wide",  m:[0,9],  fx:"fxBang"},
+    confused: {l:"open",  r:"small", m:[-1,0], fx:"fxSweat", tilt:7},
+    sad:      {l:"sad",   r:"sad",   m:[-6,0], fx:"fxTear", look:[0,.5]},
+    angry:    {l:"angry", r:"angry", m:[-3,0], fx:"fxAnger"},
+    love:     {l:"heart", r:"heart", m:[8,0],  blush:1, fx:"fxHeart"},
+    listening:{l:"open",  r:"open",  m:[3,0],  tilt:-4}
+  };
+  let state="idle", emotion="happy", look=[0,0], lookUntil=0, talkTimer=null, blinkTimer=null;
+  function cur(){ return E[state==="listening" ? "listening" : state==="thinking" ? "thinking" : emotion] || E.neutral; }
+  function mouthD(curve, open){
+    if (open > 0.5) return `path("M 108 146 Q 120 ${146+curve+open} 132 146 Q 120 ${146+curve*0.2} 108 146 Z")`;
+    return `path("M 108 146 Q 120 ${146+curve} 132 146")`;
+  }
+  function setMouth(curve, open){
+    const m=$("mouth");
+    m.style.d = mouthD(curve, open);
+    m.setAttribute("fill", open > 0.5 ? "#7FF3E1" : "none");
+  }
+  function draw(){
+    const e = cur();
+    $("eyeLp").setAttribute("d", eye(e.l, 94, 110));
+    $("eyeRp").setAttribute("d", eye(e.r, 146, 110));
+    $("blush").style.opacity = e.blush ? 1 : 0;
+    ["fxSweat","fxTear","fxAnger","fxBang","fxHmm","fxHeart"].forEach(id => $(id).classList.toggle("on", e.fx===id));
+    scr.classList.toggle("thinkarm", e.arm==="think");
+    const lk = (Date.now() < lookUntil) ? look : (e.look || look);
+    $("eyesG").style.transform = `translate(${lk[0]*9}px, ${lk[1]*6}px)`;
+    $("headG").style.transform = `rotate(${(e.tilt||0) + lk[0]*3}deg)`;
+    if (state !== "speaking") setMouth(e.m[0], e.m[1]);
+  }
+  function blink(){
+    ["eyeL","eyeR"].forEach(id => $(id).style.transform = "scaleY(.1)");
+    setTimeout(() => ["eyeL","eyeR"].forEach(id => $(id).style.transform = ""), 110);
+    clearTimeout(blinkTimer);
+    blinkTimer = setTimeout(blink, 2200 + Math.random()*3500);
+  }
+  blinkTimer = setTimeout(blink, 1600);
+  setInterval(() => {
+    if (Date.now() < lookUntil || cur().look) return;
+    look = Math.random() < .5 ? [0,0] : [(Math.random()*2-1)*.7, (Math.random()*2-1)*.4];
+    draw();
+  }, 2500);
+  function startTalk(){
+    stopTalk();
+    talkTimer = setInterval(() => {
+      const open = Math.random() < .2 ? 0 : 3 + Math.random()*9;
+      setMouth(Math.max(cur().m[0], 3), open);
+    }, 110);
+  }
+  function stopTalk(){ if (talkTimer) { clearInterval(talkTimer); talkTimer=null; } }
+  let gestureTimer=null;
   function gesture(cls, ms){
-    scr.classList.remove("nod","shake","dance","wink");
+    scr.classList.remove("nod","shake","dance","wave");
     void scr.offsetWidth;
     scr.classList.add(cls);
     clearTimeout(gestureTimer);
     gestureTimer=setTimeout(()=>scr.classList.remove(cls), ms);
   }
-  function look(cls){
-    scr.classList.remove("look-left","look-right","look-up","look-down");
-    if (cls) scr.classList.add(cls);
-    clearTimeout(lookTimer);
-    lookTimer=setTimeout(()=>scr.classList.remove("look-left","look-right","look-up","look-down"), 2200);
-  }
+  function lookAt(x,y){ look=[x,y]; lookUntil = Date.now()+2200; draw(); setTimeout(draw, 2300); }
   function cue(c){
     switch(c){
-      case ":)": emotion="happy"; break;
+      case ":)": emotion="happy"; if (Math.random()<.35) gesture("wave",1500); break;
       case "=))": emotion="laugh"; break;
       case ":(": emotion="sad"; break;
       case ">:(": emotion="angry"; break;
       case ":?!": emotion="surprised"; break;
       case ":?": emotion="confused"; break;
-      case "...": emotion="thinking"; break;
-      case "~*~": emotion="happy"; gesture("dance",1900); break;
-      case ":)^": gesture("nod",1050); break;
-      case ":(~": gesture("shake",850); break;
-      case "<-": look("look-left"); break;
-      case "->": look("look-right"); break;
-      case "^^": look("look-up"); break;
-      case "__": look("look-down"); break;
-      case "<>": look(null); break;
-      case "><": gesture("wink",400); break;
+      case "...": emotion="thinking"; setTimeout(()=>{ if(emotion==="thinking"){ emotion="neutral"; draw(); } }, 2500); break;
+      case "~*~": emotion="love"; gesture("dance",1700); break;
+      case ":)^": emotion = emotion==="sad"?"neutral":emotion; gesture("nod",950); break;
+      case ":(~": gesture("shake",800); break;
+      case "<-": lookAt(-1,0); break;
+      case "->": lookAt(1,0); break;
+      case "^^": lookAt(0,-1); break;
+      case "__": lookAt(0,1); break;
+      case "<>": lookAt(0,0); break;
+      case "><": $("eyeR").style.transform="scaleY(.1)"; setTimeout(()=>{$("eyeR").style.transform="";}, 380); return;
     }
     draw();
   }
 
   /* ---------- State ---------- */
-  const STATUS={idle:"Chạm để nói", listening:"Đang nghe…", thinking:"Đang nghĩ…", speaking:"Đang nói…"};
+  const STATUS={idle:"Chạm để nói", listening:"Đang nghe…", thinking:"Đang nghĩ…", speaking:"Đang nói…", camera:"Đang mở camera…"};
   function setState(s){
     state=s||"idle";
     app.className="app "+state;
     $("statusText").textContent=STATUS[state]||state;
+    if (state==="speaking") startTalk(); else stopTalk();
+    if (state==="thinking") gesture("nod", 900);
     draw();
   }
   function note(t, info){ const n=$("note"); n.textContent=t||""; n.className="note"+(info?" info":""); scrollDown(); }
@@ -295,13 +449,62 @@ input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent)}
       case "cue": cue(ev.cue); break;
       case "error": note(ev.text); emotion="sad"; draw(); break;
       case "info": note(ev.text, true); break;
+      case "delegate": case "action": emotion="happy"; gesture("wave",1500); draw(); break;
     }
   };
 
   /* ---------- Controls ---------- */
   $("micBtn").onclick = () => { if (R) R.tap(); else note("Mở trong app Android để dùng."); };
   $("stopBtn").onclick = () => { if (R) R.stop(); };
-  $("kbBtn").onclick = () => { const on=$("typebar").classList.toggle("on"); if(on) $("textIn").focus(); };
+  $("photoBtn").onclick = () => { if (R) R.camera("photo"); };
+  $("videoBtn").onclick = () => { if (R) R.camera("video"); };
+
+  /* ---------- Voices ---------- */
+  let voices = [];
+  function maleVoice(){
+    // Mã giọng Google tiếng Việt thường là nam: vid, vie (cần nghe thử để chắc)
+    for (const code of ["vid","vie"]) {
+      const net = voices.find(v => v.name.includes("-"+code+"-") && v.name.includes("network"));
+      const loc = voices.find(v => v.name.includes("-"+code+"-"));
+      if (net || loc) return (net || loc).name;
+    }
+    return "";
+  }
+  function applyMale(save){
+    const name = maleVoice();
+    if (name) $("voice").value = name;
+    $("pitch").value = 0.86; $("rate").value = 0.96;
+    $("pitchVal").textContent = "0.86"; $("rateVal").textContent = "0.96";
+    if (save && R) {
+      R.saveSettings(JSON.stringify({voice: name, pitch: 0.86, rate: 0.96}));
+      cfg.voice = name; cfg.pitch = 0.86; cfg.rate = 0.96;
+    }
+    return name;
+  }
+  window.onVoices = list => {
+    voices = Array.isArray(list) ? list : [];
+    fillVoices();
+    let done = false;
+    try { done = localStorage.getItem("voiceAuto") === "1"; } catch(e){}
+    if (!done && !cfg.voice && voices.length) {
+      applyMale(true);
+      try { localStorage.setItem("voiceAuto","1"); } catch(e){}
+    }
+  };
+  function fillVoices(){
+    const sel=$("voice"); const cur = cfg.voice || "";
+    sel.innerHTML='<option value="">Mặc định của máy</option>';
+    voices.forEach(v=>{ const o=document.createElement("option"); o.value=v.name; o.textContent=v.label; sel.appendChild(o); });
+    sel.value = voices.some(v=>v.name===cur) ? cur : "";
+  }
+  $("maleBtn").onclick = () => { const n = applyMale(false); if (R) R.previewVoice(n, "0.96", "0.86"); if (!n) note("Máy chưa có giọng nam tiếng Việt: bấm 'Cài giọng đọc tiếng Việt' để tải thêm giọng.", true); };
+  $("previewBtn").onclick = () => { if (R) R.previewVoice($("voice").value, String($("rate").value), String($("pitch").value)); };
+  $("kbBtn").onclick = () => { const on=$("typewrap").classList.toggle("on"); if(on) $("textIn").focus(); };
+  document.querySelectorAll(".delegate button").forEach(b => b.onclick = () => {
+    const t=$("textIn").value.trim(); $("textIn").value="";
+    if (!R) return;
+    if (b.dataset.share) R.shareTo(b.dataset.share, t); else R.delegate(b.dataset.app, t);
+  });
   function sendTyped(){ const t=$("textIn").value.trim(); if(!t) return; $("textIn").value=""; if(R) R.sendText(t); }
   $("sendBtn").onclick = sendTyped;
   $("textIn").addEventListener("keydown", e => { if (e.key==="Enter") sendTyped(); });
@@ -311,6 +514,7 @@ input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent)}
   function loadCfg(){
     try { cfg = JSON.parse(R ? R.getSettings() : "{}"); } catch(e){ cfg={}; }
     cfg.robots = Array.isArray(cfg.robots) && cfg.robots.length ? cfg.robots : [{name:"Quân sư Khổng Minh", key:""}];
+    cfg.contacts = Array.isArray(cfg.contacts) ? cfg.contacts : [];
     renderSelect();
   }
   function renderSelect(){
@@ -336,15 +540,34 @@ input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent)}
   }
   $("addRobot").onclick = () => { cfg.robots.push({name:"Robot mới", key:""}); renderRobots(); };
 
+  function renderContacts(){
+    const box=$("contactList"); box.innerHTML="";
+    (cfg.contacts||[]).forEach((c,i)=>{
+      const d=document.createElement("div"); d.className="robotItem";
+      d.innerHTML=`<div class="field"><label>Tên gọi</label><input type="text" data-i="${i}" data-k="name" placeholder="anh Tuấn"></div>
+        <div class="field"><label>Số Zalo</label><input type="text" inputmode="tel" data-i="${i}" data-k="zalo" placeholder="0901234567"></div>
+        <div class="field"><label>Messenger (tên tài khoản)</label><input type="text" data-i="${i}" data-k="messenger" autocapitalize="off" placeholder="tuan.nguyen"></div>
+        <div class="field"><label>Email</label><input type="text" inputmode="email" data-i="${i}" data-k="email" autocapitalize="off" placeholder="tuan@datthu.vn"></div>
+        <button class="rm" data-rmc="${i}">Xóa người này</button>`;
+      box.appendChild(d);
+      ["name","zalo","messenger","email"].forEach(k => d.querySelector(`[data-k=${k}]`).value = c[k]||"");
+    });
+    box.querySelectorAll("input").forEach(inp=>inp.oninput=e=>{ cfg.contacts[+e.target.dataset.i][e.target.dataset.k]=e.target.value; });
+    box.querySelectorAll("[data-rmc]").forEach(b=>b.onclick=()=>{ cfg.contacts.splice(+b.dataset.rmc,1); renderContacts(); });
+  }
+  $("addContact").onclick = () => { cfg.contacts = cfg.contacts||[]; cfg.contacts.push({name:"",zalo:"",messenger:"",email:""}); renderContacts(); };
+
   function setSeg(v){ document.querySelectorAll("#endMode button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.v===v))); cfg.endMode=v; }
   document.querySelectorAll("#endMode button").forEach(b=>b.onclick=()=>setSeg(b.dataset.v));
 
   function openSettings(){
-    loadCfg(); renderRobots(); setSeg(cfg.endMode||"phrase");
+    loadCfg(); renderRobots(); renderContacts(); setSeg(cfg.endMode||"phrase");
     $("endPhrases").value=cfg.endPhrases||""; $("autoSendSec").value=cfg.autoSendSec||20; $("idleTimeoutSec").value=cfg.idleTimeoutSec||60;
     $("rate").value=cfg.rate||1; $("pitch").value=cfg.pitch||1; $("rateVal").textContent=(+$("rate").value).toFixed(2); $("pitchVal").textContent=(+$("pitch").value).toFixed(2);
-    $("vibrate").checked=cfg.vibrate!==false; $("volumeKey").checked=cfg.volumeKey!==false; $("autostart").checked=cfg.autostart!==false;
+    $("vibrate").checked=cfg.vibrate!==false; $("volumeKey").checked=cfg.volumeKey!==false; $("autostart").checked=cfg.autostart!==false; $("screenAssist").checked=cfg.screenAssist!==false;
     $("base").value=cfg.base||"https://api.dify.ai/v1";
+    try { voices = JSON.parse(R ? R.getVoices() : "[]"); } catch(e){}
+    fillVoices();
     $("ver").textContent = "Robot Đất Thủ " + (R ? R.version() : "");
     $("sheet").classList.add("on");
   }
@@ -358,7 +581,8 @@ input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent)}
       robots:cfg.robots, current:Math.min(cfg.current||0, cfg.robots.length-1), endMode:cfg.endMode||"phrase",
       endPhrases:$("endPhrases").value, autoSendSec:+$("autoSendSec").value||20, idleTimeoutSec:+$("idleTimeoutSec").value||60,
       rate:+$("rate").value, pitch:+$("pitch").value, vibrate:$("vibrate").checked, volumeKey:$("volumeKey").checked,
-      autostart:$("autostart").checked, base:$("base").value.trim()||"https://api.dify.ai/v1"
+      autostart:$("autostart").checked, screenAssist:$("screenAssist").checked, base:$("base").value.trim()||"https://api.dify.ai/v1", voice:$("voice").value,
+      contacts:(cfg.contacts||[]).map(c=>({name:(c.name||"").trim(),zalo:(c.zalo||"").trim(),messenger:(c.messenger||"").trim(),email:(c.email||"").trim()})).filter(c=>c.name)
     };
     if (R) R.saveSettings(JSON.stringify(out));
     $("sheet").classList.remove("on");
@@ -366,6 +590,7 @@ input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent)}
     note("Đã lưu cài đặt", true);
   };
   $("assistBtn").onclick = () => R && R.openAssistantSettings();
+  $("assistBtn2").onclick = () => R && R.openAssistantSettings();
   $("ttsBtn").onclick = () => R && R.openTtsSettings();
   $("newChat").onclick = () => { if (R) R.newChat(); $("said").textContent=""; $("heard").textContent=""; };
 
