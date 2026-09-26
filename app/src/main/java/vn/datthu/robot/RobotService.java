@@ -11,6 +11,7 @@ import android.graphics.BitmapFactory;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.speech.tts.Voice;
+import android.util.Base64;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import android.content.Intent;
@@ -80,6 +81,9 @@ public class RobotService extends Service {
     private boolean forceSend;
     private boolean ending;
     private boolean listeningActive;
+    private boolean gotAnyCallback;
+    private boolean useExplicitGoogle = true;
+    private int watchdogSeq;
 
     private final StringBuilder pendingText = new StringBuilder();
     private boolean streamDone = true;
@@ -184,14 +188,25 @@ public class RobotService extends Service {
         heard.setLength(0);
         partial = "";
         lastVoiceAt = System.currentTimeMillis();
+        useExplicitGoogle = true;
         startRecognizer();
     }
 
+    /**
+     * Ưu tiên gọi thẳng dịch vụ nhận giọng của Google (nhanh, ổn định). Nhưng nếu máy đang đặt
+     * Robot làm "Ứng dụng trợ lý mặc định", có máy sẽ không cho app tự bind kiểu này (treo im lặng,
+     * không lỗi). Watchdog bên dưới phát hiện việc treo và chuyển sang cách 2: để hệ thống tự chọn
+     * dịch vụ nhận giọng (tôn trọng cấu hình trợ lý hiện tại), không cần đổi cài đặt trợ lý mặc định.
+     */
     private SpeechRecognizer createRecognizer() {
-        ComponentName cn = RecognizerPick.find(this);
         SpeechRecognizer r = null;
-        if (cn != null) r = SpeechRecognizer.createSpeechRecognizer(this, cn);
-        else if (SpeechRecognizer.isRecognitionAvailable(this)) r = SpeechRecognizer.createSpeechRecognizer(this);
+        if (useExplicitGoogle) {
+            ComponentName cn = RecognizerPick.find(this);
+            if (cn != null) r = SpeechRecognizer.createSpeechRecognizer(this, cn);
+        }
+        if (r == null && SpeechRecognizer.isRecognitionAvailable(this)) {
+            r = SpeechRecognizer.createSpeechRecognizer(this);
+        }
         if (r != null) r.setRecognitionListener(listener);
         return r;
     }
@@ -199,7 +214,7 @@ public class RobotService extends Service {
     private void startRecognizer() {
         if (sr == null) sr = createRecognizer();
         if (sr == null) {
-            emitError("Không tìm thấy dịch vụ nhận giọng nói của Google. Cập nhật app Google rồi thử lại.");
+            emitError("Không tìm thấy dịch vụ nhận giọng nói. Cập nhật app Google rồi thử lại.");
             setState("idle");
             return;
         }
@@ -214,27 +229,48 @@ public class RobotService extends Service {
         i.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2500L);
         setState("listening");
         listeningActive = true;
+        gotAnyCallback = false;
         try {
             sr.startListening(i);
+            armWatchdog();
         } catch (Exception e) {
             resetRecognizer();
             h.postDelayed(this::startRecognizer, 500);
         }
     }
 
+    /** Nếu sau vài giây không có bất kỳ phản hồi nào (treo im lặng), tự đổi cách và thử lại. */
+    private void armWatchdog() {
+        final int seq = ++watchdogSeq;
+        h.postDelayed(() -> {
+            if (seq != watchdogSeq || !listeningActive || gotAnyCallback) return;
+            resetRecognizer();
+            if (useExplicitGoogle) {
+                useExplicitGoogle = false; // đổi sang để hệ thống tự chọn dịch vụ nhận giọng
+                startRecognizer();
+            } else {
+                listeningActive = false;
+                emitError("Không nghe được. Nếu Robot đang là \"Ứng dụng trợ lý kỹ thuật số\" mặc định, thử đổi lại thành Google trong Cài đặt máy.");
+                setState("idle");
+            }
+        }, 3500);
+    }
+
     private void stopListening() {
         listeningActive = false;
+        watchdogSeq++;
         if (sr != null) try { sr.cancel(); } catch (Exception ignored) { }
     }
 
     private void resetRecognizer() {
+        watchdogSeq++;
         if (sr != null) try { sr.destroy(); } catch (Exception ignored) { }
         sr = null;
     }
 
     private final RecognitionListener listener = new RecognitionListener() {
-        @Override public void onReadyForSpeech(Bundle b) { }
-        @Override public void onBeginningOfSpeech() { lastVoiceAt = System.currentTimeMillis(); }
+        @Override public void onReadyForSpeech(Bundle b) { gotAnyCallback = true; }
+        @Override public void onBeginningOfSpeech() { gotAnyCallback = true; lastVoiceAt = System.currentTimeMillis(); }
         @Override public void onRmsChanged(float v) { }
         @Override public void onBufferReceived(byte[] b) { }
         @Override public void onEndOfSpeech() { }
@@ -242,6 +278,7 @@ public class RobotService extends Service {
 
         @Override
         public void onPartialResults(Bundle b) {
+            gotAnyCallback = true;
             if (!listeningActive) return;
             String p = first(b);
             if (p.isEmpty()) return;
@@ -252,6 +289,7 @@ public class RobotService extends Service {
 
         @Override
         public void onResults(Bundle b) {
+            gotAnyCallback = true;
             if (!listeningActive) return;
             listeningActive = false;
             netErrors = 0;
@@ -639,9 +677,22 @@ public class RobotService extends Service {
         String msg = "email".equals(a.type)
                 ? "Em soạn thư" + to + (a.subject.isEmpty() ? "" : ", tiêu đề " + a.subject) + ". Nội dung: " + a.content + " Gửi không ạ?"
                 : "Em soạn tin " + label + to + ": " + a.content + " Gửi không ạ?";
-        emit("info", "text", "Bản nháp " + label + (a.who.isEmpty() ? "" : " → " + a.who) + ": " + a.content
-                + "  (nói \"gửi\", \"sửa lại…\" hoặc \"hủy\")");
+        emitDraft(label, a.who, a.subject, a.content);
         say(msg);
+    }
+
+    /** Hiện bản nháp rõ ràng trên màn hình để anh đọc và xác nhận, không chỉ nghe qua giọng đọc. */
+    private void emitDraft(String app, String who, String subject, String content) {
+        try {
+            JSONObject o = new JSONObject();
+            o.put("type", "draft");
+            o.put("app", app);
+            o.put("who", who == null ? "" : who);
+            o.put("subject", subject == null ? "" : subject);
+            o.put("content", content == null ? "" : content);
+            Ui u = ui;
+            if (u != null) u.onRobotEvent(o);
+        } catch (Exception ignored) { }
     }
 
     private void handleConfirm(String text) {
@@ -655,10 +706,12 @@ public class RobotService extends Service {
                     ? " Em mở khung chat, anh nhấn giữ rồi dán và bấm gửi nhé."
                     : " Anh chọn người nhận rồi bấm gửi nhé.";
             if ("email".equals(a.type)) tail = " Anh kiểm tra rồi bấm gửi nhé.";
+            emit("clearDoc", "x", "");
             executeAction(a, "Dạ, em mở " + label + "." + tail);
         } else if ("no".equals(intent)) {
             awaitingConfirm = false;
             draft = null;
+            emit("clearDoc", "x", "");
             say("Dạ, em hủy tin này.");
         } else if ("edit".equals(intent)) {
             String n = text.replaceAll("(?i)^.*?(sửa lại thành|sửa thành|đổi thành|đổi lại thành|sửa lại|đổi lại)\\s*[:,]?\\s*", "").trim();
@@ -763,6 +816,7 @@ public class RobotService extends Service {
                 byte[] b = java.nio.file.Files.readAllBytes(f.toPath());
                 imgs = new ArrayList<>();
                 imgs.add(b);
+                emitPhoto(b);
             } catch (Exception ignored) { }
         }
         emit("info", "text", "Robot đang xem màn hình" + (app.isEmpty() ? "" : " " + app) + "…");
@@ -799,6 +853,7 @@ public class RobotService extends Service {
                     afterCamera();
                     return;
                 }
+                emitPhoto(imgs.get(0));
                 String ask = said.isEmpty() ? "Hãy xem và nói điều em thấy, theo đúng phong cách của em." : said;
                 String prefix = video
                         ? "(Kèm " + imgs.size() + " khung hình trích từ video người dùng vừa quay bằng camera điện thoại, xếp theo thứ tự thời gian. Video đã được lưu vào thư viện ảnh.) "
@@ -889,6 +944,19 @@ public class RobotService extends Service {
     private void emitError(String msg) {
         lastError = msg;
         emit("error", "text", msg);
+    }
+
+    /** Đưa ảnh (vừa chụp, hoặc màn hình vừa xem) lên hẳn màn hình app để anh nhìn thấy, không chỉ nghe. */
+    private void emitPhoto(byte[] jpeg) {
+        if (jpeg == null) return;
+        try {
+            String b64 = Base64.encodeToString(jpeg, Base64.NO_WRAP);
+            JSONObject o = new JSONObject();
+            o.put("type", "photo");
+            o.put("dataUrl", "data:image/jpeg;base64," + b64);
+            Ui u = ui;
+            if (u != null) u.onRobotEvent(o);
+        } catch (Exception ignored) { }
     }
 
     private void emit(String type, String k, String v) {
