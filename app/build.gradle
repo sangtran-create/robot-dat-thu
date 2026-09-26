@@ -1,0 +1,40 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'vn.datthu.robot'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'vn.datthu.robot'
+        minSdk 31
+        targetSdk 35
+        versionCode 1
+        versionName '1.0'
+    }
+
+    signingConfigs {
+        robot {
+            storeFile file('robot.keystore')
+            storePassword 'robot2026'
+            keyAlias 'robot'
+            keyPassword 'robot2026'
+        }
+    }
+
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.robot
+        }
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.robot
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Robot Đất Thủ</title>
+<style>
+:root{
+  --bg:#0B1114; --screen:#04090B; --oled:#E6FFFA; --glow:#8FF0DF; --muted:#8FA3AA;
+  --panel:#141C20; --edge:#26343A; --text:#E6ECEE; --accent:#4FD1BD; --led:#FF4A3D; --warn:#E8A93B;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--text);
+  font-family:"Be Vietnam Pro",system-ui,Roboto,sans-serif;font-size:16px;overflow:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+button{border:none;background:none;cursor:pointer}
+.app{height:100%;display:flex;flex-direction:column;padding:10px 16px 14px;gap:10px}
+
+.top{display:flex;align-items:center;gap:10px}
+.robotSel{flex:1;min-width:0;appearance:none;background:var(--panel);border:1px solid var(--edge);border-radius:14px;padding:10px 14px;font-weight:600}
+.iconbtn{width:44px;height:44px;border-radius:14px;background:var(--panel);border:1px solid var(--edge);display:grid;place-items:center;color:var(--muted)}
+svg.ic{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+.stage{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px}
+.screen{position:relative;flex:1 1 55%;min-height:180px;background:var(--screen);border-radius:26px;overflow:hidden;
+  box-shadow:0 0 0 3px var(--edge),0 0 40px -10px var(--glow) inset}
+.screen svg{position:absolute;inset:0;width:100%;height:100%;filter:drop-shadow(0 0 6px var(--glow))}
+.face *{fill:var(--oled);stroke:var(--oled)}
+.face .line{fill:none;stroke-width:6;stroke-linecap:round;stroke-linejoin:round}
+.face .solid{stroke:none}
+#head{transform-box:view-box;transform-origin:50% 50%;transition:transform .35s ease}
+#eyes{transform-box:fill-box;transform-origin:center;animation:blink 5s infinite}
+@keyframes blink{0%,93%,100%{transform:scaleY(1)}95%{transform:scaleY(.08)}}
+.talk{transform-box:fill-box;transform-origin:center;animation:talk .2s ease-in-out infinite alternate}
+@keyframes talk{from{transform:scaleY(.35)}to{transform:scaleY(1.15)}}
+.look-left #head{transform:translateX(-9%)} .look-right #head{transform:translateX(9%)}
+.look-up #head{transform:translateY(-9%)} .look-down #head{transform:translateY(9%)}
+.nod #head{animation:nod .5s ease-in-out 2}
+@keyframes nod{50%{transform:translateY(7%)}}
+.shake #head{animation:shake .4s ease-in-out 2}
+@keyframes shake{25%{transform:translateX(-6%)}75%{transform:translateX(6%)}}
+.dance #head{animation:dance .6s ease-in-out 3}
+@keyframes dance{25%{transform:rotate(-8deg) translateY(-4%)}75%{transform:rotate(8deg) translateY(-4%)}}
+.wink #eyes{animation:none;transform:scaleY(.1)}
+.status{position:absolute;top:12px;left:16px;display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--oled);text-shadow:0 0 6px var(--glow)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--oled);opacity:.4}
+.listening .dot{background:var(--led);opacity:1;box-shadow:0 0 10px var(--led)}
+.thinking .dot{background:var(--warn);opacity:1}
+.speaking .dot{background:var(--accent);opacity:1}
+
+.talkbox{flex:1 1 45%;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:2px 2px}
+.heard{color:var(--muted);font-size:15px;line-height:1.5}
+.heard:empty{display:none}
+.said{font-size:19px;line-height:1.55;font-weight:500;white-space:pre-wrap}
+.note{font-size:14px;line-height:1.45;color:#FFB4AB;border-left:3px solid var(--led);padding-left:10px}
+.note.info{color:var(--muted);border-color:var(--accent)}
+.note:empty{display:none}
+
+.typebar{display:none;gap:8px}
+.typebar.on{display:flex}
+.typebar input{flex:1;min-width:0;padding:12px 14px;border-radius:14px;border:1px solid var(--edge);background:var(--panel)}
+.typebar button{padding:0 16px;border-radius:14px;background:var(--accent);color:#06201C;font-weight:600}
+
+.controls{display:flex;align-items:center;justify-content:center;gap:26px}
+.round{width:56px;height:56px;border-radius:50%;background:var(--panel);border:1px solid var(--edge);display:grid;place-items:center;color:var(--muted)}
+.mic{width:86px;height:86px;border-radius:50%;background:var(--oled);color:var(--screen);display:grid;place-items:center;box-shadow:0 0 24px -6px var(--glow)}
+.listening .mic{background:var(--led);color:#fff}
+.speaking .mic,.thinking .mic{background:var(--accent)}
+.mic svg.ic{width:34px;height:34px}
+.hint{text-align:center;font-size:12px;color:var(--muted)}
+
+/* Settings */
+.sheet{position:fixed;inset:0;background:var(--bg);overflow-y:auto;padding:14px 16px 40px;display:none}
+.sheet.on{display:block}
+.sheet h1{font-size:20px;margin:6px 0 14px;display:flex;align-items:center;justify-content:space-between}
+.group{margin-bottom:20px}
+.group h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 8px 2px;font-weight:600}
+.card{background:var(--panel);border:1px solid var(--edge);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.field label{display:block;font-size:14px;font-weight:500;margin-bottom:5px}
+.field small{display:block;color:var(--muted);font-size:12.5px;margin-top:4px;line-height:1.4}
+.field input[type=text],.field input[type=number],.field input[type=password],.field textarea,.field select{
+  width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--edge);background:var(--bg)}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.robotItem{border:1px solid var(--edge);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.robotItem .rm{color:#FF8A80;font-size:13px;align-self:flex-end}
+.btn{padding:11px 14px;border-radius:12px;background:var(--bg);border:1px solid var(--edge);font-weight:500;text-align:left}
+.btn.primary{background:var(--accent);color:#06201C;border-color:var(--accent);font-weight:700;text-align:center}
+.seg{display:flex;gap:6px}
+.seg button{flex:1;padding:9px;border-radius:10px;border:1px solid var(--edge);background:var(--bg);font-size:14px}
+.seg button[aria-pressed=true]{background:var(--accent);color:#06201C;border-color:var(--accent);font-weight:600}
+input[type=range]{width:100%}
+input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent)}
+.ver{color:var(--muted);font-size:12px;text-align:center;margin-top:10px}
+@media (prefers-reduced-motion: reduce){#eyes,.talk,#head{animation:none!important}}
+</style>
+</head>
+<body>
+<div class="app idle" id="app">
+  <div class="top">
+    <select class="robotSel" id="robotSel" aria-label="Chọn robot"></select>
+    <button class="iconbtn" id="setBtn" aria-label="Cài đặt">
+      <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>
+    </button>
+  </div>
+
+  <div class="stage">
+    <div class="screen" id="screen">
+      <div class="status"><span class="dot"></span><span id="statusText">Chạm để nói</span></div>
+      <svg class="face" viewBox="0 0 240 160" aria-hidden="true"><g id="head"><g id="eyes"></g><g id="mouth"></g></g></svg>
+    </div>
+    <div class="talkbox" id="talkbox">
+      <div class="heard" id="heard"></div>
+      <div class="said" id="said"></div>
+      <div class="note" id="note"></div>
+    </div>
+  </div>
+
+  <div class="typebar" id="typebar">
+    <input id="textIn" placeholder="Gõ để thử robot" autocomplete="off">
+    <button id="sendBtn">Gửi</button>
+  </div>
+
+  <div class="controls">
+    <button class="round" id="kbBtn" aria-label="Gõ chữ">
+      <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h.01M11 10h.01M15 10h.01M7 14h10"/></svg>
+    </button>
+    <button class="mic" id="micBtn" aria-label="Nói">
+      <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>
+    </button>
+    <button class="round" id="stopBtn" aria-label="Cho robot nghỉ">
+      <svg class="ic" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2"/></svg>
+    </button>
+  </div>
+  <div class="hint" id="hint">Nói xong thì kết bằng "xong rồi" hoặc "vậy đó em". Chạm nút giữa để ngắt lời hoặc gửi ngay.</div>
+</div>
+
+<!-- Settings -->
+<div class="sheet" id="sheet">
+  <h1>Cài đặt <button class="iconbtn" id="closeSet" aria-label="Đóng"><svg class="ic" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></h1>
+
+  <div class="group">
+    <h2>Robot (mỗi robot là một app trên Dify)</h2>
+    <div class="card">
+      <div id="robotList"></div>
+      <button class="btn" id="addRobot">+ Thêm robot</button>
+      <div class="field"><small>Lấy API key trong Dify: mở robot › Publish › API Access › API Key (dạng app-xxxx).</small></div>
+    </div>
+  </div>
+
+  <div class="group">
+    <h2>Cách robot biết anh nói xong</h2>
+    <div class="card">
+      <div class="seg" id="endMode">
+        <button data-v="phrase">Câu ra hiệu</button>
+        <button data-v="pause">Ngừng nói là gửi</button>
+      </div>
+      <div class="field"><label for="endPhrases">Các câu ra hiệu (cách nhau bằng dấu phẩy)</label>
+        <textarea id="endPhrases" rows="2"></textarea>
+        <small>Anh nói dài bao nhiêu cũng được; robot chỉ trả lời khi nghe câu kết như "xong rồi".</small></div>
+      <div class="field"><label for="autoSendSec">Tự gửi nếu im lặng quá (giây)</label>
+        <input type="number" id="autoSendSec" min="5" max="120"></div>
+      <div class="field"><label for="idleTimeoutSec">Robot tự nghỉ khi không ai nói (giây)</label>
+        <input type="number" id="idleTimeoutSec" min="15" max="600"></div>
+    </div>
+  </div>
+
+  <div class="group">
+    <h2>Giọng đọc &amp; cử chỉ</h2>
+    <div class="card">
+      <div class="field"><label for="rate">Tốc độ đọc <span id="rateVal"></span></label><input type="range" id="rate" min="0.6" max="1.6" step="0.05"></div>
+      <div class="field"><label for="pitch">Độ trầm bổng <span id="pitchVal"></span></label><input type="range" id="pitch" min="0.6" max="1.4" step="0.05"></div>
+      <div class="row"><label for="vibrate">Rung khi gật / lắc đầu</label><input type="checkbox" id="vibrate"></div>
+      <button class="btn" id="ttsBtn">Cài giọng đọc tiếng Việt…</button>
+    </div>
+  </div>
+
+  <div class="group">
+    <h2>Gọi robot</h2>
+    <div class="card">
+      <div class="row"><label for="autostart">Mở app là robot nghe ngay</label><input type="checkbox" id="autostart"></div>
+      <div class="row"><label for="volumeKey">Nút giảm âm lượng = nút robot (khi đang mở app)</label><input type="checkbox" id="volumeKey"></div>
+      <button class="btn" id="assistBtn">Giữ nút nguồn để gọi robot…</button>
+      <div class="field"><small>Chọn "Ứng dụng trợ lý kỹ thuật số" › Robot Đất Thủ, rồi vào Cài đặt › Hệ thống › Cử chỉ › Nhấn và giữ nút nguồn › Trợ lý kỹ thuật số. Chạm 2 lần mặt lưng: Cài đặt › Hệ thống › Cử chỉ › Quick Tap › Mở ứng dụng › Robot Đất Thủ.</small></div>
+    </div>
+  </div>
+
+  <div class="group">
+    <h2>Nâng cao</h2>
+    <div class="card">
+      <div class="field"><label for="base">Địa chỉ API Dify</label><input type="text" id="base" autocapitalize="off" spellcheck="false"><small>Dify Cloud: https://api.dify.ai/v1</small></div>
+      <button class="btn" id="newChat">Bắt đầu cuộc trò chuyện mới (xóa trí nhớ ngắn hạn)</button>
+    </div>
+  </div>
+
+  <button class="btn primary" id="saveBtn" style="width:100%">Lưu</button>
+  <div class="ver" id="ver"></div>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const R = window.Robot || null;   // cầu nối Android
+  const app = $("app");
+
+  /* ---------- Face ---------- */
+  const EL=[88,64], ER=[152,64], M=[120,112];
+  const eye={
+    neutral:'<rect class="solid" x="-13" y="-18" width="26" height="36" rx="12"/>',
+    happy:'<path class="line" d="M-15 6 Q0 -14 15 6"/>',
+    laugh:'<path class="line" d="M-15 4 L0 -8 L15 4"/>',
+    thinking:'<rect class="solid" x="-12" y="-12" width="24" height="22" rx="9"/>',
+    surprised:'<circle class="line" r="15"/><circle class="solid" r="5"/>',
+    confused:'<rect class="solid" x="-12" y="-14" width="24" height="28" rx="10"/>',
+    sad:'<path class="solid" d="M-13 -5 L13 -13 L13 13 Q13 17 9 17 L-9 17 Q-13 17 -13 13 Z"/>',
+    angry:'<path class="solid" d="M-13 -13 L13 -4 L13 13 Q13 17 9 17 L-9 17 Q-13 17 -13 13 Z"/>',
+    listening:'<rect class="solid" x="-14" y="-20" width="28" height="40" rx="13"/>'
+  };
+  const mouth={
+    neutral:'<path class="line" d="M-13 0 Q0 7 13 0"/>',
+    happy:'<path class="solid" d="M-20 -4 Q0 20 20 -4 Z"/>',
+    laugh:'<path class="solid" d="M-24 -6 Q0 26 24 -6 Z"/>',
+    thinking:'<path class="line" d="M-8 2 L10 -2"/>',
+    surprised:'<ellipse class="line" rx="8" ry="10" stroke-width="5"/>',
+    confused:'<path class="line" d="M-12 2 Q-6 -3 0 2 T12 2"/>',
+    sad:'<path class="line" d="M-14 7 Q0 -6 14 7"/>',
+    angry:'<path class="line" d="M-14 4 L14 4"/>',
+    listening:'<path class="line" d="M-8 0 Q0 4 8 0"/>',
+    talk:'<ellipse class="solid talk" rx="13" ry="8"/>'
+  };
+  let state="idle", emotion="happy";
+  function draw(){
+    const e = state==="listening" ? "listening" : state==="thinking" ? "thinking" : emotion;
+    const l = eye[e]||eye.neutral;
+    const rt = (e==="sad") ? `translate(${ER[0]} ${ER[1]}) scale(-1 1)` : (e==="angry") ? `translate(${ER[0]} ${ER[1]}) scale(-1 1)` : `translate(${ER[0]} ${ER[1]})`;
+    let right = l; if (e==="confused") right = eye.thinking;
+    $("eyes").innerHTML = `<g transform="translate(${EL[0]} ${EL[1]})">${l}</g><g transform="${rt}">${right}</g>`;
+    const m = state==="speaking" ? "talk" : (mouth[e]?e:"neutral");
+    $("mouth").innerHTML = `<g transform="translate(${M[0]} ${M[1]})">${mouth[m]}</g>`;
+  }
+  const scr = $("screen");
+  let gestureTimer=null, lookTimer=null;
+  function gesture(cls, ms){
+    scr.classList.remove("nod","shake","dance","wink");
+    void scr.offsetWidth;
+    scr.classList.add(cls);
+    clearTimeout(gestureTimer);
+    gestureTimer=setTimeout(()=>scr.classList.remove(cls), ms);
+  }
+  function look(cls){
+    scr.classList.remove("look-left","look-right","look-up","look-down");
+    if (cls) scr.classList.add(cls);
+    clearTimeout(lookTimer);
+    lookTimer=setTimeout(()=>scr.classList.remove("look-left","look-right","look-up","look-down"), 2200);
+  }
+  function cue(c){
+    switch(c){
+      case ":)": emotion="happy"; break;
+      case "=))": emotion="laugh"; break;
+      case ":(": emotion="sad"; break;
+      case ">:(": emotion="angry"; break;
+      case ":?!": emotion="surprised"; break;
+      case ":?": emotion="confused"; break;
+      case "...": emotion="thinking"; break;
+      case "~*~": emotion="happy"; gesture("dance",1900); break;
+      case ":)^": gesture("nod",1050); break;
+      case ":(~": gesture("shake",850); break;
+      case "<-": look("look-left"); break;
+      case "->": look("look-right"); break;
+      case "^^": look("look-up"); break;
+      case "__": look("look-down"); break;
+      case "<>": look(null); break;
+      case "><": gesture("wink",400); break;
+    }
+    draw();
+  }
+
+  /* ---------- State ---------- */
+  const STATUS={idle:"Chạm để nói", listening:"Đang nghe…", thinking:"Đang nghĩ…", speaking:"Đang nói…"};
+  function setState(s){
+    state=s||"idle";
+    app.className="app "+state;
+    $("statusText").textContent=STATUS[state]||state;
+    draw();
+  }
+  function note(t, info){ const n=$("note"); n.textContent=t||""; n.className="note"+(info?" info":""); scrollDown(); }
+  function scrollDown(){ const b=$("talkbox"); b.scrollTop=b.scrollHeight; }
+
+  window.onRobot = ev => {
+    switch(ev.type){
+      case "state": setState(ev.state); if (ev.state==="listening") note(""); break;
+      case "heard": $("heard").textContent = ev.text; scrollDown(); break;
+      case "user": $("heard").textContent = ev.text; $("said").textContent=""; scrollDown(); break;
+      case "botStart": $("said").textContent=""; emotion="neutral"; break;
+      case "bot": { const s=$("said"); s.textContent = (s.textContent? s.textContent+" " : "") + ev.text; scrollDown(); break; }
+      case "cue": cue(ev.cue); break;
+      case "error": note(ev.text); emotion="sad"; draw(); break;
+      case "info": note(ev.text, true); break;
+    }
+  };
+
+  /* ---------- Controls ---------- */
+  $("micBtn").onclick = () => { if (R) R.tap(); else note("Mở trong app Android để dùng."); };
+  $("stopBtn").onclick = () => { if (R) R.stop(); };
+  $("kbBtn").onclick = () => { const on=$("typebar").classList.toggle("on"); if(on) $("textIn").focus(); };
+  function sendTyped(){ const t=$("textIn").value.trim(); if(!t) return; $("textIn").value=""; if(R) R.sendText(t); }
+  $("sendBtn").onclick = sendTyped;
+  $("textIn").addEventListener("keydown", e => { if (e.key==="Enter") sendTyped(); });
+
+  /* ---------- Settings ---------- */
+  let cfg = {};
+  function loadCfg(){
+    try { cfg = JSON.parse(R ? R.getSettings() : "{}"); } catch(e){ cfg={}; }
+    cfg.robots = Array.isArray(cfg.robots) && cfg.robots.length ? cfg.robots : [{name:"Quân sư Khổng Minh", key:""}];
+    renderSelect();
+  }
+  function renderSelect(){
+    const sel=$("robotSel"); sel.innerHTML="";
+    cfg.robots.forEach((r,i)=>{ const o=document.createElement("option"); o.value=i; o.textContent=r.name||("Robot "+(i+1)); sel.appendChild(o); });
+    sel.value = String(Math.min(cfg.current||0, cfg.robots.length-1));
+  }
+  $("robotSel").onchange = e => { cfg.current=Number(e.target.value); if(R) R.selectRobot(cfg.current); $("said").textContent=""; $("heard").textContent=""; checkKey(); };
+
+  function renderRobots(){
+    const box=$("robotList"); box.innerHTML="";
+    cfg.robots.forEach((r,i)=>{
+      const d=document.createElement("div"); d.className="robotItem";
+      d.innerHTML=`<div class="field"><label>Tên robot</label><input type="text" data-i="${i}" data-k="name"></div>
+        <div class="field"><label>API key Dify</label><input type="password" data-i="${i}" data-k="key" autocapitalize="off" spellcheck="false" placeholder="app-..."></div>
+        ${cfg.robots.length>1?`<button class="rm" data-rm="${i}">Xóa robot này</button>`:""}`;
+      box.appendChild(d);
+      d.querySelector('[data-k=name]').value = r.name||"";
+      d.querySelector('[data-k=key]').value = r.key||"";
+    });
+    box.querySelectorAll("input").forEach(inp=>inp.oninput=e=>{ cfg.robots[+e.target.dataset.i][e.target.dataset.k]=e.target.value; });
+    box.querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{ cfg.robots.splice(+b.dataset.rm,1); cfg.current=0; renderRobots(); });
+  }
+  $("addRobot").onclick = () => { cfg.robots.push({name:"Robot mới", key:""}); renderRobots(); };
+
+  function setSeg(v){ document.querySelectorAll("#endMode button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.v===v))); cfg.endMode=v; }
+  document.querySelectorAll("#endMode button").forEach(b=>b.onclick=()=>setSeg(b.dataset.v));
+
+  function openSettings(){
+    loadCfg(); renderRobots(); setSeg(cfg.endMode||"phrase");
+    $("endPhrases").value=cfg.endPhrases||""; $("autoSendSec").value=cfg.autoSendSec||20; $("idleTimeoutSec").value=cfg.idleTimeoutSec||60;
+    $("rate").value=cfg.rate||1; $("pitch").value=cfg.pitch||1; $("rateVal").textContent=(+$("rate").value).toFixed(2); $("pitchVal").textContent=(+$("pitch").value).toFixed(2);
+    $("vibrate").checked=cfg.vibrate!==false; $("volumeKey").checked=cfg.volumeKey!==false; $("autostart").checked=cfg.autostart!==false;
+    $("base").value=cfg.base||"https://api.dify.ai/v1";
+    $("ver").textContent = "Robot Đất Thủ " + (R ? R.version() : "");
+    $("sheet").classList.add("on");
+  }
+  $("rate").oninput = e => $("rateVal").textContent=(+e.target.value).toFixed(2);
+  $("pitch").oninput = e => $("pitchVal").textContent=(+e.target.value).toFixed(2);
+  $("setBtn").onclick = openSettings;
+  $("closeSet").onclick = () => $("sheet").classList.remove("on");
+  $("saveBtn").onclick = () => {
+    cfg.robots = cfg.robots.map(r=>({name:(r.name||"").trim()||"Robot", key:(r.key||"").trim()}));
+    const out = {
+      robots:cfg.robots, current:Math.min(cfg.current||0, cfg.robots.length-1), endMode:cfg.endMode||"phrase",
+      endPhrases:$("endPhrases").value, autoSendSec:+$("autoSendSec").value||20, idleTimeoutSec:+$("idleTimeoutSec").value||60,
+      rate:+$("rate").value, pitch:+$("pitch").value, vibrate:$("vibrate").checked, volumeKey:$("volumeKey").checked,
+      autostart:$("autostart").checked, base:$("base").value.trim()||"https://api.dify.ai/v1"
+    };
+    if (R) R.saveSettings(JSON.stringify(out));
+    $("sheet").classList.remove("on");
+    loadCfg(); checkKey();
+    note("Đã lưu cài đặt", true);
+  };
+  $("assistBtn").onclick = () => R && R.openAssistantSettings();
+  $("ttsBtn").onclick = () => R && R.openTtsSettings();
+  $("newChat").onclick = () => { if (R) R.newChat(); $("said").textContent=""; $("heard").textContent=""; };
+
+  function checkKey(){
+    const r = cfg.robots[cfg.current||0] || {};
+    if (!r.key) { note("Robot này chưa có API key. Chạm biểu tượng Cài đặt ở góc trên để dán key từ Dify."); $("said").textContent=""; }
+    else if (!$("said").textContent) $("said").textContent = "Sẵn sàng. Chạm nút giữa, giữ nút nguồn, hoặc bấm giảm âm lượng để gọi robot.";
+  }
+
+  loadCfg();
+  setState(R ? R.getState() : "idle");
+  checkKey();
+})();
+</script>
+</body>
+</html>

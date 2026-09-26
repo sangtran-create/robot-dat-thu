@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<voice-interaction-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:sessionService="vn.datthu.robot.AssistSessionService"
+    android:recognitionService="vn.datthu.robot.ProxyRecognitionService"
+    android:settingsActivity="vn.datthu.robot.MainActivity"
+    android:supportsAssist="true"
+    android:supportsLaunchVoiceAssistFromKeyguard="true"
+    android:supportsLocalInteraction="false" />
